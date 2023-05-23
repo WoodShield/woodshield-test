@@ -5,26 +5,20 @@ import streamlit as st
 
 st.title("米国株価可視化アプリ")
 
-
-#太字は*二つで囲む
-# #とスペースで太字アンド改行
 st.sidebar.write("""
 # 米国株価
 こちらは株価可視化ツールです。以下のオプションから表示日数を指定できます。
 """)
-#改行は\n
 
 st.sidebar.write("""
 ## 表示日数選択
 """)
-days = st.sidebar.slider('日数',1,360,20)
+days = st.sidebar.number_input('日数',min_value=0, max_value=int(1e9), value=20)
 
 st.write(f"""
 ### 過去{days}日間の米国株価
 """)
 
-#キャッシュに保存することでデータの読み込みを早くする（キャッシュを消す方法もある）
-#@st.cache_data
 def get_data(days,tickers):
   df = pd.DataFrame()
   for ticker in tickers:
@@ -38,22 +32,24 @@ def get_data(days,tickers):
     df = pd.concat([df,hist])
   return df
 
-
 try: 
     st.sidebar.write("""
     ## 株価の範囲指定
     """)
-    ymin, ymax = st.sidebar.slider(
-        '範囲を指定してください。',
-        0.0, 500.0, (0.0, 500.0)
-    )
+    ymin = st.sidebar.number_input('最小値を入力してください。', min_value=0, max_value=int(1e9), value=0)
+    ymax = st.sidebar.number_input('最大値を入力してください。', min_value=0, max_value=int(1e9), value=300)
 
-    tickers = [ 'AAPL','GOOGL', 'MSFT','NFLX', 'AMZN','PLTR']
+    # tickersリストをテキスト入力から生成
+    tickers_text = st.sidebar.text_input("ティッカーをカンマで区切って入力してください：", 'AAPL,GOOGL,MSFT,NFLX,AMZN,PLTR')
+    tickers = [s.strip() for s in tickers_text.split(",")]
+
     df = get_data(days, tickers)
+
+    # デフォルトの選択項目をtickersリストに基づいて動的に更新
     companies = st.multiselect(
         '会社名を選択してください。',
         list(df.index),
-        ['AAPL','GOOGL', 'MSFT','NFLX', 'AMZN','PLTR']
+        tickers
     )
 
     if not companies:
@@ -75,7 +71,6 @@ try:
             )
         )
         st.altair_chart(chart, use_container_width=True)
-
 except:
     st.error(
         "なにかエラーが起きているようです。"
